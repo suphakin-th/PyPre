@@ -15,6 +15,7 @@ import secrets
 from core.data_processor import DataProcessor
 from core.chart_builder import ChartBuilder
 from core.auth_manager import AuthManager
+from core.pchi_analyzer import PCHIAnalyzer
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -32,6 +33,18 @@ os.makedirs('data/datasets', exist_ok=True)
 auth_manager = AuthManager()
 data_processor = DataProcessor()
 chart_builder = ChartBuilder()
+
+# Initialize PCHI analyzer (lazy loading)
+pchi_analyzer = None
+
+def get_pchi_analyzer():
+    """Get or create PCHI analyzer instance"""
+    global pchi_analyzer
+    if pchi_analyzer is None:
+        csv_path = 'data/uploads/20251024 PCHI Claim summary 2020 - now.csv'
+        if os.path.exists(csv_path):
+            pchi_analyzer = PCHIAnalyzer(csv_path)
+    return pchi_analyzer
 
 
 def login_required(f):
@@ -255,6 +268,239 @@ def list_dashboards():
                 })
     
     return jsonify(dashboards)
+
+
+# ==================== PCHI Claims Dashboard Routes ====================
+
+@app.route('/pchi')
+@login_required
+def pchi_dashboard():
+    """PCHI Claims Dashboard page"""
+    return render_template('pchi_dashboard.html', username=session.get('username'))
+
+
+@app.route('/api/pchi/kpis', methods=['POST'])
+@login_required
+def get_pchi_kpis():
+    """Get PCHI KPIs"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        filters = request.json.get('filters', {}) if request.json else {}
+        kpis = analyzer.get_kpi_summary(filters)
+        return jsonify(kpis)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/trends', methods=['POST'])
+@login_required
+def get_pchi_trends():
+    """Get claims trends"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        filters = request.json.get('filters', {}) if request.json else {}
+        trends = analyzer.get_claims_trend(filters)
+        return jsonify(trends)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/status', methods=['POST'])
+@login_required
+def get_pchi_status():
+    """Get claim status distribution"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        filters = request.json.get('filters', {}) if request.json else {}
+        status = analyzer.get_status_distribution(filters)
+        return jsonify(status)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/providers', methods=['POST'])
+@login_required
+def get_pchi_providers():
+    """Get top providers"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        filters = request.json.get('filters', {}) if request.json else {}
+        providers = analyzer.get_top_providers(filters, limit=10)
+        return jsonify(providers)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/business-units', methods=['POST'])
+@login_required
+def get_pchi_business_units():
+    """Get business unit analysis"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        filters = request.json.get('filters', {}) if request.json else {}
+        bu_data = analyzer.get_bu_analysis(filters)
+        return jsonify(bu_data)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/age-distribution', methods=['POST'])
+@login_required
+def get_pchi_age():
+    """Get age distribution"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        filters = request.json.get('filters', {}) if request.json else {}
+        age_data = analyzer.get_age_distribution(filters)
+        return jsonify(age_data)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/gender-distribution', methods=['POST'])
+@login_required
+def get_pchi_gender():
+    """Get gender distribution"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        filters = request.json.get('filters', {}) if request.json else {}
+        gender_data = analyzer.get_gender_distribution(filters)
+        return jsonify(gender_data)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/benefit-types', methods=['POST'])
+@login_required
+def get_pchi_benefits():
+    """Get benefit type analysis"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        filters = request.json.get('filters', {}) if request.json else {}
+        benefit_data = analyzer.get_benefit_type_analysis(filters, limit=10)
+        return jsonify(benefit_data)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/distribution-channels', methods=['POST'])
+@login_required
+def get_pchi_channels():
+    """Get distribution channel analysis"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        filters = request.json.get('filters', {}) if request.json else {}
+        channel_data = analyzer.get_distribution_channel_analysis(filters)
+        return jsonify(channel_data)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/products', methods=['POST'])
+@login_required
+def get_pchi_products():
+    """Get product analysis"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        filters = request.json.get('filters', {}) if request.json else {}
+        product_data = analyzer.get_product_analysis(filters, limit=10)
+        return jsonify(product_data)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/yearly-comparison', methods=['POST'])
+@login_required
+def get_pchi_yearly():
+    """Get yearly comparison"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        filters = request.json.get('filters', {}) if request.json else {}
+        yearly_data = analyzer.get_yearly_comparison(filters)
+        return jsonify(yearly_data)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/table', methods=['POST'])
+@login_required
+def get_pchi_table():
+    """Get claims data table"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        data = request.json if request.json else {}
+        filters = data.get('filters', {})
+        page = data.get('page', 1)
+        page_size = data.get('page_size', 100)
+
+        table_data = analyzer.get_claims_data_table(filters, page, page_size)
+        return jsonify(table_data)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/pchi/filter-options', methods=['GET'])
+@login_required
+def get_pchi_filter_options():
+    """Get available filter options"""
+    try:
+        analyzer = get_pchi_analyzer()
+        if not analyzer:
+            return jsonify({'error': 'PCHI data not available'}), 404
+
+        options = analyzer.get_filter_options()
+        return jsonify(options)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

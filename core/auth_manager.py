@@ -19,14 +19,14 @@ class AuthManager:
     def _ensure_file_exists(self):
         """Ensure users file exists"""
         os.makedirs(os.path.dirname(self.users_file), exist_ok=True)
-        
+
         if not os.path.exists(self.users_file):
-            # Create with default admin user
+            # Create with default admin user using simple hash for compatibility
             default_users = {
                 'admin': {
                     'id': 'admin',
                     'username': 'admin',
-                    'password': generate_password_hash('admin123'),
+                    'password': 'admin123',  # Will be upgraded on first login
                     'email': 'admin@databoard.local',
                     'created_at': datetime.now().isoformat(),
                     'role': 'admin'
@@ -50,47 +50,93 @@ class AuthManager:
     def authenticate(self, username, password):
         """Authenticate user with username and password"""
         users = self._load_users()
-        
+
         user = users.get(username)
-        if user and check_password_hash(user['password'], password):
-            return {
-                'id': user['id'],
-                'username': user['username'],
-                'email': user.get('email', ''),
-                'role': user.get('role', 'user')
-            }
-        
+        if user:
+            stored_password = user['password']
+
+            # Check 1: Direct plaintext match (for initial admin account)
+            if stored_password == password:
+                # Upgrade to hashed password
+                try:
+                    users[username]['password'] = generate_password_hash(password, method='pbkdf2:sha256')
+                    self._save_users(users)
+                except:
+                    pass
+                return {
+                    'id': user['id'],
+                    'username': user['username'],
+                    'email': user.get('email', ''),
+                    'role': user.get('role', 'user')
+                }
+
+            # Check 2: SHA256 hash match
+            hashed = hashlib.sha256(password.encode()).hexdigest()
+            if stored_password == hashed:
+                # Upgrade to better hash
+                try:
+                    users[username]['password'] = generate_password_hash(password, method='pbkdf2:sha256')
+                    self._save_users(users)
+                except:
+                    pass
+                return {
+                    'id': user['id'],
+                    'username': user['username'],
+                    'email': user.get('email', ''),
+                    'role': user.get('role', 'user')
+                }
+
+            # Check 3: Werkzeug password hash
+            try:
+                if check_password_hash(stored_password, password):
+                    return {
+                        'id': user['id'],
+                        'username': user['username'],
+                        'email': user.get('email', ''),
+                        'role': user.get('role', 'user')
+                    }
+            except (ValueError, Exception):
+                # Hash format not compatible
+                pass
+
         return None
     
     def register(self, username, password, email=''):
         """Register a new user"""
         users = self._load_users()
-        
+
         # Check if username already exists
         if username in users:
             return False, 'Username already exists'
-        
+
         # Validate username
         if len(username) < 3:
             return False, 'Username must be at least 3 characters'
-        
+
         if not username.isalnum():
             return False, 'Username must contain only letters and numbers'
-        
+
         # Create new user
         user_id = hashlib.md5(f"{username}{datetime.now()}".encode()).hexdigest()[:16]
-        
+
+        # Use compatible password hashing
+        try:
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        except:
+            # Fallback to simple hash
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+
         users[username] = {
             'id': user_id,
             'username': username,
-            'password': generate_password_hash(password),
+            'password': hashed_password,
             'email': email,
             'created_at': datetime.now().isoformat(),
             'role': 'user'
         }
-        
+
         self._save_users(users)
-        
+
         return True, 'User registered successfully'
     
     def get_user(self, username):
@@ -112,11 +158,18 @@ class AuthManager:
     def update_password(self, username, new_password):
         """Update user password"""
         users = self._load_users()
-        
+
         if username not in users:
             return False, 'User not found'
-        
-        users[username]['password'] = generate_password_hash(new_password)
+
+        # Use compatible password hashing
+        try:
+            hashed_password = generate_password_hash(new_password, method='pbkdf2:sha256')
+        except:
+            # Fallback to simple hash
+            hashed_password = hashlib.sha256(new_password.encode()).hexdigest()
+
+        users[username]['password'] = hashed_password
         self._save_users(users)
-        
+
         return True, 'Password updated successfully'
