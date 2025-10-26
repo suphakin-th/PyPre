@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataBoard - Dashboard</title>
+    
+    <!-- GridStack CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@8.4.0/dist/gridstack.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: #f3f4f6;
+            border-radius: 8px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 64px;
+            width: 280px;
+            height: calc(100vh - 64px);
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            padding: 24px;
+            overflow-y: auto;
+            z-index: 50;
+        }
+
+        .sidebar-section {
+            margin-bottom: 32px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f3f4f6;
+        }
+
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .datasets-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .dataset-item {
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .dataset-item:hover {
+            background: #f3f4f6;
+            border-color: #667eea;
+        }
+
+        .dataset-item.active {
+            background: #ede9fe;
+            border-color: #667eea;
+        }
+
+        .dataset-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: #111827;
+        }
+
+        .dataset-meta {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .widget-tools {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .widget-tool {
+            padding: 12px;
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .widget-tool:hover {
+            background: #ede9fe;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 24px;
+            min-height: calc(100vh - 64px);
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .dashboard-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .dashboard-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* Grid */
+        .grid-stack {
+            background: transparent;
+        }
+
+        .grid-stack-item-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .widget-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafafa;
+        }
+
+        .widget-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #111827;
+        }
+
+        .widget-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .widget-btn {
+            padding: 4px 8px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+
+        .widget-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .widget-body {
+            padding: 16px;
+            flex: 1;
+            overflow: auto;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #111827;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .file-upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f9fafb;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #667eea;
+            background: #ede9fe;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #111827;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            animation: toastSlideIn 0.3s ease;
+        }
+
+        @keyframes toastSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">📊 DataBoard</div>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <div class="user-avatar">{{ username[0].upper() }}</div>
+                <span>{{ username }}</span>
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-title">Data Sources</div>
+            <button class="btn" onclick="openUploadModal()">
+                📁 Upload CSV
+            </button>
+            <div id="datasets-list" class="datasets-list" style="margin-top: 16px;"></div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Add Widget</div>
+            <div class="widget-tools">
+                <div class="widget-tool" onclick="addWidget('bar')">📊 Bar Chart</div>
+                <div class="widget-tool" onclick="addWidget('line')">📈 Line Chart</div>
+                <div class="widget-tool" onclick="addWidget('pie')">🥧 Pie Chart</div>
+                <div class="widget-tool" onclick="addWidget('table')">📋 Table</div>
+                <div class="widget-tool" onclick="addWidget('scatter')">📍 Scatter</div>
+                <div class="widget-tool" onclick="addWidget('area')">🏔️ Area Chart</div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <button class="btn btn-secondary" onclick="saveDashboard()">💾 Save Dashboard</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="dashboard-header">
+            <div class="dashboard-title">My Dashboard</div>
+            <div class="dashboard-actions">
+                <button class="btn btn-sm btn-secondary" onclick="clearDashboard()">🗑️ Clear All</button>
+            </div>
+        </div>
+
+        <div class="grid-stack" id="grid-stack"></div>
+
+        <div id="empty-state" class="empty-state">
+            <div class="empty-state-icon">📊</div>
+            <div class="empty-state-title">Start Building Your Dashboard</div>
+            <p>Upload a CSV file and add widgets to visualize your data</p>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Upload CSV File</h3>
+                <button class="modal-close" onclick="closeModal('upload-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="file-upload-area" id="file-upload-area" onclick="document.getElementById('file-input').click()">
+                    <input type="file" id="file-input" accept=".csv" style="display: none;" onchange="handleFileSelect(event)">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📤</div>
+                    <div style="font-weight: 600; margin-bottom: 8px;">Click to upload or drag and drop</div>
+                    <div style="color: #6b7280; font-size: 14px;">CSV files only</div>
+                </div>
+                <div id="upload-progress" style="display: none; margin-top: 20px; text-align: center;">
+                    <div class="loading"></div>
+                    <div style="margin-top: 12px;">Uploading and processing...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Configuration Modal -->
+    <div id="chart-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Configure Chart</h3>
+                <button class="modal-close" onclick="closeModal('chart-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Dataset</label>
+                    <select id="chart-dataset" onchange="updateColumnOptions()">
+                        <option value="">Select dataset...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Chart Type</label>
+                    <select id="chart-type">
+                        <option value="bar">Bar Chart</option>
+                        <option value="line">Line Chart</option>
+                        <option value="pie">Pie Chart</option>
+                        <option value="scatter">Scatter Plot</option>
+                        <option value="area">Area Chart</option>
+                        <option value="table">Table</option>
+                    </select>
+                </div>
+                <div class="form-group" id="x-column-group">
+                    <label>X-Axis / Category Column</label>
+                    <select id="chart-x-column">
+                        <option value="">Select column...</option>
+                    </select>
+                </div>
+                <div class="form-group" id="y-column-group">
+                    <label>Y-Axis / Value Column</label>
+                    <select id="chart-y-column">
+                        <option value="">Select column...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Aggregation</label>
+                    <select id="chart-aggregation">
+                        <option value="sum">Sum</option>
+                        <option value="mean">Average</option>
+                        <option value="count">Count</option>
+                        <option value="min">Minimum</option>
+                        <option value="max">Maximum</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Limit (max items)</label>
+                    <input type="number" id="chart-limit" value="20" min="1" max="100">
+                </div>
+                <button class="btn" onclick="createChart()">Create Chart</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GridStack JS -->
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@8.4.0/dist/gridstack-all.js"></script>
+    
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>

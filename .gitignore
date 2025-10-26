@@ -1,0 +1,6 @@
+*.zip
+*.json
+*.xlsx
+venv/*
+*.csv
+*.pyc
